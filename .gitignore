@@ -5,6 +5,8 @@ build/
 # Your personal files: they stay on your computer and are never uploaded
 resumes/
 cover-letters/
+import/*
+!import/README.md
 notes/
 matches/
 output/

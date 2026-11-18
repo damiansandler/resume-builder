@@ -27,7 +27,7 @@ if (!run(['install'])) {
 }
 
 console.log('\n2/3 Creating your personal folders…');
-for (const dir of ['resumes', 'import', 'cover-letters', 'notes', 'matches', 'output']) {
+for (const dir of ['resumes', 'sources', 'cover-letters', 'notes', 'matches', 'output']) {
   mkdirSync(path.join(ROOT, dir), { recursive: true });
   console.log(`  ${dir}/`);
 }
@@ -53,8 +53,10 @@ console.log(`
 ✔ All set.
 
 Next steps:
-  Start from the resume you already have: put it (and your LinkedIn PDF) in import/,
-  then ask Claude Code "Create my resume from the files in import/" or run npm run import.
+  Start from the resume you already have:
+    sources/         ← put your current and older resumes and your LinkedIn profile PDF here
+    cover-letters/   ← put your past cover letters here
+  Then ask Claude Code "Create my resume from my sources", or run npm run import.
 
   Or start from the sample:
   npm run new -- my-resume   create your resume (a copy of the sample, in resumes/)

@@ -10,10 +10,12 @@ how resumes are scored: both ways pick up the change.
 - **Job offer:** the full text of the posting.
 - **Cover letters (optional):** past letters from `cover-letters/`, used only to find stories and the
   candidate's voice.
+- **Sources (optional):** files from `sources/`: the candidate's LinkedIn profile export and older
+  resumes. They often hold experience the current resume leaves out (older roles, tools, projects).
 - **Experience notes (optional):** `notes/experience.md`, the candidate's answers to earlier questions
   about experience that is not in the resume.
 
-Cover letters and experience notes do not add points: only the resume counts for the score, because it
+Sources, cover letters and experience notes do not add points: only the resume counts for the score, because it
 is what the recruiter reads. Use them to find experience that can be **added to the resume truthfully**
 and to avoid asking the same question twice.
 
@@ -21,8 +23,8 @@ and to avoid asking the same question twice.
 
 - Score only on evidence written in the resume. Do not assume skills that are not there.
 - Quote the resume line that supports each claim.
-- Never suggest adding achievements, numbers or experience that are not in the resume, the cover
-  letters or the experience notes. Suggestions may reword, reorder, emphasize or cut, never invent.
+- Never suggest adding achievements, numbers or experience that are not in the resume, the sources,
+  the cover letters or the experience notes. Suggestions may reword, reorder, emphasize or cut, never invent.
 - When a gap might be covered by experience the resume does not show, **ask** instead of assuming
   (see Step 6).
 - Be direct. A low score with clear reasons is more useful than a polite one.
@@ -107,8 +109,9 @@ Knockouts are not part of the score. If one is not met, write it at the top, nex
 ## Step 6. Questions for the candidate
 
 Write 3 to 7 questions that could raise the score with **real** experience. Ask only about gaps and
-partial requirements where the resume hints the candidate may have more to tell (a related job, tool
-or project), plus any knockout that needs confirming (such as relocation). Skip gaps that are clearly
+partial requirements where the resume or the sources hint the candidate may have more to tell (a
+related job, tool or project; experience that appears in LinkedIn or an older resume but not in the
+current resume), plus any knockout that needs confirming (such as relocation). Skip gaps that are clearly
 true gaps, and anything already answered in the experience notes.
 
 Each question must:
@@ -178,8 +181,8 @@ Write the analysis in Markdown, in English, with exactly this structure:
 - **Bullets:** which bullets to move up, reword (show before → after) or cut.
 - **Keywords:** where the missing keywords fit truthfully, and which ones should not be added
   because the experience is not there.
-- **Stories from cover letters and notes:** stories worth using in the application or interview (only
-  if cover letters or experience notes were provided).
+- **From sources, cover letters and notes:** experience from LinkedIn or older resumes worth bringing
+  back into this version, and stories worth using in the application or interview (only if provided).
 
 ## Questions for you
 

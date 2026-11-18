@@ -7,8 +7,8 @@ to, and score any version against a job offer to see what fits, what's missing a
 
 It does four things:
 
-1. **Start from what you have.** Drop your current resume, your LinkedIn profile PDF and past cover
-   letters in a folder, and get your resume in this format, without retyping it.
+1. **Start from what you have.** Put your resumes and LinkedIn profile PDF in one folder and your cover
+   letters in another, and get your resume in this format without retyping it.
 2. **Markdown → PDF.** Your content lives in plain `.md` files, separate from the design. One command
    builds the PDF.
 3. **One version per application.** Each version is a dated file, so you can tailor your resume for a
@@ -36,16 +36,42 @@ Your resumes, cover letters, analyses and PDFs stay on your computer: they are n
    ```
 
    It installs everything, builds a sample resume and opens the PDF so you can see that it works.
-3. **Create your resume from the one you already have.** Put your current resume (PDF or Word) and
-   your LinkedIn profile PDF in the `import/` folder. To get the LinkedIn PDF, open your profile and
-   click **More → Save to PDF**. Then open the project in Claude Code and write:
+3. **Add the files you already have** (see [Where to put your files](#where-to-put-your-files)):
 
-   > Create my resume from the files in import/
+   - **`sources/`:** your current resume, older resumes and your LinkedIn profile PDF.
+   - **`cover-letters/`:** your past cover letters.
+
+   Then open the project in Claude Code and write:
+
+   > Create my resume from my sources
 
    Claude writes `resumes/<today>-imported.md`, builds the PDF in `output/`, and asks you a few
    questions to make it stronger. Then open `npm run preview` to see it and edit it.
 
    No resume yet? Start from the sample with `npm run new -- my-resume` and replace its content.
+
+## Where to put your files
+
+You only need two folders. Put your files there and leave them there: they are read again in every
+analysis, never changed, and never uploaded.
+
+| Folder | What goes in it | Formats |
+|---|---|---|
+| **`sources/`** | Your **LinkedIn profile** and your **resumes**: the current one and any older ones. | PDF, Word (`.docx`, `.doc`), Markdown, text |
+| **`cover-letters/`** | Your past **cover letters**, one file each. | PDF, Word (`.docx`, `.doc`), Markdown, text |
+
+- **LinkedIn profile:** open your profile on LinkedIn and click **More → Save to PDF**.
+- **`.doc` files** (old Word format) are converted automatically on macOS. On Windows or Linux, open
+  them in Word and save them as `.docx`.
+
+What they are used for:
+
+- **To create your resume** in this project's format (see below).
+- **In every job-offer analysis:** your LinkedIn or an older resume often has experience your current
+  resume leaves out, such as an older role, a tool or a project. The analysis finds it and suggests
+  bringing it back, and asks you before adding anything.
+- **Cover letters** show Claude how you write and the stories you tell. They are used as reference
+  only: Claude does not write new cover letters unless you ask.
 
 ## Folder structure
 
@@ -53,9 +79,9 @@ Your resumes, cover letters, analyses and PDFs stay on your computer: they are n
 resume-builder/
 ├── README.md                ← this file
 ├── CLAUDE.md                ← rules for Claude (read automatically by Claude Code)
-├── import/                  ← YOUR current resume, LinkedIn PDF, cover letters (not uploaded)
-├── resumes/                 ← YOUR resumes, one dated .md file per version     (not uploaded)
-├── cover-letters/           ← YOUR past cover letters, used as reference       (not uploaded)
+├── sources/                 ← YOUR LinkedIn PDF and existing resumes, any format (not uploaded)
+├── cover-letters/           ← YOUR past cover letters, any format               (not uploaded)
+├── resumes/                 ← your resumes in this project, one .md per version (not uploaded)
 ├── notes/experience.md      ← experience not in your resume yet: your answers  (not uploaded)
 ├── matches/                 ← resume vs. job offer analyses                     (not uploaded)
 ├── output/                  ← generated PDFs                                    (not uploaded)
@@ -67,7 +93,7 @@ resume-builder/
 └── .env                     ← your Anthropic API key, optional                  (not uploaded)
 ```
 
-You only work in `import/`, `resumes/`, `cover-letters/` and `notes/`, and read `output/` and `matches/`. The project
+You only work in `sources/`, `cover-letters/`, `resumes/` and `notes/`, and read `output/` and `matches/`. The project
 folder also works as an [Obsidian](https://obsidian.md) vault, so you can edit and read everything there.
 
 ## How to use it
@@ -77,7 +103,7 @@ folder also works as an [Obsidian](https://obsidian.md) vault, so you can edit a
 | Command | What it does |
 | --- | --- |
 | `npm run setup` | First-time install and test. |
-| `npm run import` | Creates your first resume from the files in `import/` (needs an API key, see below). |
+| `npm run import` | Creates a resume from the files in `sources/` (needs an API key, see below). |
 | `npm run new -- company-x` | Creates a new version, copying the newest one: `resumes/<today>-company-x.md`. |
 | `npm run preview` | Opens a live preview at http://localhost:4321 that updates every time you save. |
 | `npm run generate` | Builds the PDF into `output/`, named like the Markdown file. |
@@ -91,26 +117,20 @@ Every command uses the **newest** version unless you name another one, or just p
 npm run generate -- 2026-04-23
 ```
 
-### Start from your current resume and LinkedIn
+### Create your resume from your sources
 
-Put any of these in `import/`:
+With your files in `sources/` and `cover-letters/`, ask Claude Code *"Create my resume from my
+sources"*, or run `npm run import` (add a name with `npm run import -- my-resume`). You get:
 
-- **Your current resume:** PDF, Word (`.docx`), Markdown or text.
-- **Your LinkedIn profile:** on your profile, **More → Save to PDF**.
-- **Past cover letters:** they are moved to `cover-letters/`.
-
-Then ask Claude Code *"Create my resume from the files in import/"*, or run `npm run import`
-(add a name with `npm run import -- my-resume`). You get:
-
-- **A resume** in `resumes/`, using your resume as the base and LinkedIn to fill what is missing:
-  roles, dates, education, certifications, skills.
+- **A resume** in `resumes/`, using your most recent resume as the base, older resumes for detail on
+  older roles, and LinkedIn to fill what is missing: roles, dates, education, certifications, skills.
 - **Nothing lost:** details that do not fit in two pages go to `notes/experience.md`, ready for future
   tailored versions.
 - **Questions** about conflicts between sources, bullets without results and gaps in dates. Answer them
   in the chat to make the resume stronger.
 
-Nothing is invented: every line comes from your files or your answers. The rules are in
-[`import/README.md`](import/README.md).
+Nothing is invented: every line comes from your files or your answers. Your files are only read,
+never changed. The rules are in [`sources/README.md`](sources/README.md).
 
 ### A typical application
 
@@ -171,7 +191,7 @@ See [`examples/sample-experience.md`](examples/sample-experience.md) for an exam
 
 ### Cover letters
 
-Put your past cover letters in `cover-letters/`, one `.md` or `.txt` file each. Claude reads them as a
+Put your past cover letters in `cover-letters/`, one file each, in any format. Claude reads them as a
 reference for your voice and for stories worth using in an application. They are not used for the score.
 
 ### Writing the resume
@@ -192,7 +212,7 @@ To change the look (fonts, spacing, margins), see [`docs/design.md`](docs/design
 
 ## Keeping your files safe
 
-`import/`, `resumes/`, `cover-letters/`, `notes/`, `matches/`, `output/` and `.env` are listed in `.gitignore`, so they are
+`sources/`, `cover-letters/`, `resumes/`, `notes/`, `matches/`, `output/` and `.env` are listed in `.gitignore`, so they are
 never uploaded, even if you push your copy to GitHub. That also means GitHub is not a backup for them:
 keep a copy somewhere else, such as a synced folder.
 

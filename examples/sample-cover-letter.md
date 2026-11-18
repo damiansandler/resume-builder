@@ -1,4 +1,4 @@
-<!-- Sample cover letter with made-up data. Put your real cover letters in cover-letters/ (one .md file each). Claude reads them only as a reference for your voice and your stories. -->
+<!-- Sample cover letter with made-up data. Put your real cover letters in cover-letters/ (one file each: PDF, Word, Markdown or text). Claude reads them only as a reference for your voice and your stories. -->
 
 # Cover letter — Product Manager, Cartify (2024)
 

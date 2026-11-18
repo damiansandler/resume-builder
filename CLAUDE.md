@@ -7,7 +7,7 @@ unless the user asks otherwise.
 ## Rules
 
 - **Never invent** achievements, metrics, dates, companies, titles or skills. Everything you write about
-  the user must come from `resumes/`, `import/`, `cover-letters/`, `notes/experience.md`, or from what
+  the user must come from `resumes/`, `sources/`, `cover-letters/`, `notes/experience.md`, or from what
   the user tells you in the chat. If something is missing, say so and ask.
 - **Save what you learn.** When the user tells you about experience that is not in their resume, add it
   to `notes/experience.md` (see below), so they never have to answer the same question twice.
@@ -17,19 +17,23 @@ unless the user asks otherwise.
   (anecdotes, achievements that are not in the resume). Do not write new cover letters unless asked.
 - When suggesting resume text, keep the user's voice and the resume's conventions (see the Markdown
   structure in `docs/markdown.md`).
-- `resumes/`, `import/` (except its README), `cover-letters/`, `notes/`, `matches/`, `output/` and `reference/`
+- `resumes/`, `sources/` (except its README), `cover-letters/`, `notes/`, `matches/`, `output/` and `reference/`
   are personal and git-ignored.
   Never move their contents into tracked files, and never put the user's personal data in
   `examples/`, `docs/`, `README.md` or code.
 
-## Importing an existing resume or LinkedIn profile
+## Creating a resume from sources
 
-When the user asks to create their resume from the files in `import/` (or shares their current resume,
-LinkedIn PDF or cover letters to start from), follow the instructions in `import/README.md` exactly.
-It is the same file `npm run import` uses. Read PDFs and Word files directly; never publish or upload
-them anywhere.
+`sources/` holds the user's LinkedIn profile PDF and their current and older resumes (PDF, Word,
+Markdown or text). The files stay there permanently: never move, rename or delete them.
 
-If an import report from `npm run import` exists in `import/` and the user asks to answer the import
+When the user asks to create their resume from their sources (or shares an existing resume or LinkedIn
+PDF to start from), follow the instructions in `sources/README.md` exactly. It is the same file
+`npm run import` uses. Read PDFs and Word files directly; never publish or upload them anywhere.
+If the user shares a file in the chat instead, suggest saving it in `sources/` (or `cover-letters/`
+for a cover letter) so later analyses can use it.
+
+If an import report from `npm run import` exists in `notes/` and the user asks to answer the import
 questions, ask them one by one, save the answers to `notes/experience.md`, and update the imported
 resume version.
 
@@ -39,7 +43,8 @@ When the user pastes a job offer (or a link to one) and asks how well a resume f
 
 1. Use the newest file in `resumes/` unless the user names another version. If `resumes/` is empty, say
    so and use `examples/sample-resume.md`.
-2. Read every file in `cover-letters/` and `notes/experience.md` (if they exist).
+2. Read every file in `sources/`, `cover-letters/` and `notes/experience.md` (if they exist), in any
+   format (PDF, Word, Markdown, text).
 3. Follow `match/criteria.md` exactly: areas, seniority weights, scoring, questions and output format.
    It is the same file `npm run match` uses, so both give the same kind of analysis.
 4. Save the result to `matches/YYYY-MM-DD-<company>-<role>.md` (lowercase, hyphens) and show the user
@@ -74,8 +79,8 @@ details, tools, numbers. It grows over time and is read before every analysis.
 | Path | What it is |
 |---|---|
 | `resumes/` | The user's resumes, one dated Markdown file per version. The newest file is the default. |
-| `import/` | Material to start from: an existing resume, a LinkedIn PDF, cover letters. Its README has the import instructions. |
-| `cover-letters/` | The user's past cover letters, reference only. |
+| `sources/` | The user's LinkedIn profile PDF and current and older resumes. Its README has the import instructions. |
+| `cover-letters/` | The user's past cover letters (any format), reference only. |
 | `notes/experience.md` | Experience not in the resume yet: the user's answers to questions. |
 | `matches/` | Saved resume-vs-offer analyses. |
 | `output/` | Generated PDFs. |
@@ -90,7 +95,7 @@ details, tools, numbers. It grows over time and is read before every analysis.
 | Command | What it does |
 |---|---|
 | `npm run setup` | First-time install and test. |
-| `npm run import [-- <label>]` | First resume from the files in `import/` (needs `ANTHROPIC_API_KEY` in `.env`). |
+| `npm run import [-- <label>]` | Resume from the files in `sources/` (needs `ANTHROPIC_API_KEY` in `.env`). |
 | `npm run new -- <label>` | New resume version, copied from the newest one. |
 | `npm run preview` | Live preview in the browser. |
 | `npm run generate` | Builds the PDF into `output/`. |

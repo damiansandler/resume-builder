@@ -6,13 +6,15 @@
 //   npm run match                          → paste the offer, then press Ctrl+D
 //   npm run match -- offer.txt             → read the offer from a file
 //   npm run match -- offer.txt 2020-04-23  → compare with another resume version
-// Also reads cover-letters/ and notes/experience.md when they exist.
+// Also reads sources/ (LinkedIn profile, older resumes), cover-letters/ and notes/experience.md
+// when they exist.
 //
 // Needs ANTHROPIC_API_KEY, set in a .env file at the project root (see README).
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { askClaude, requireApiKey, slug, today as todayDate } from '../src/claude.js';
+import { listMaterial, materialBlocks } from '../src/files.js';
 import { ROOT } from '../src/render.js';
 import { resolveResume } from '../src/versions.js';
 
@@ -29,7 +31,8 @@ if (offer.trim().length < 200) {
 
 const criteria = readFileSync(path.join(ROOT, 'match', 'criteria.md'), 'utf8');
 const resume = readFileSync(resumePath, 'utf8');
-const coverLetters = readCoverLetters(path.join(ROOT, 'cover-letters'));
+const coverLetters = listMaterial(path.join(ROOT, 'cover-letters')).files;
+const sources = listMaterial(path.join(ROOT, 'sources')).files;
 const notesPath = path.join(ROOT, 'notes', 'experience.md');
 const notes = existsSync(notesPath) ? readFileSync(notesPath, 'utf8').trim() : '';
 const today = todayDate();
@@ -40,21 +43,32 @@ starting with the "# <Role> · <Company>" heading.
 
 ${criteria}`;
 
-const parts = [
-  `Today's date: ${today}`,
-  `<resume file="${path.basename(resumePath)}">\n${resume}\n</resume>`,
-  coverLetters.length
-    ? coverLetters.map((c) => `<cover_letter file="${c.name}">\n${c.text}\n</cover_letter>`).join('\n\n')
-    : 'No cover letters provided.',
-  notes ? `<experience_notes>\n${notes}\n</experience_notes>` : 'No experience notes provided.',
-  `<job_offer>\n${offer.trim()}\n</job_offer>`,
+const content = [
+  { type: 'text', text: `Today's date: ${today}\n\n<resume file="${path.basename(resumePath)}">\n${resume}\n</resume>` },
+  ...(await materialBlocks(sources, 'sources')),
+  ...(await materialBlocks(coverLetters, 'cover-letters')),
+  {
+    type: 'text',
+    text: [
+      sources.length ? '' : 'No source material (sources/) provided.',
+      coverLetters.length ? '' : 'No cover letters provided.',
+      notes ? `<experience_notes>\n${notes}\n</experience_notes>` : 'No experience notes provided.',
+      `<job_offer>\n${offer.trim()}\n</job_offer>`,
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
+  },
 ];
 
-const extras = [coverLetters.length && `${coverLetters.length} cover letters`, notes && 'experience notes'].filter(Boolean);
+const extras = [
+  sources.length && `${sources.length} source files`,
+  coverLetters.length && `${coverLetters.length} cover letters`,
+  notes && 'experience notes',
+].filter(Boolean);
 console.log(`Comparing ${rel(resumePath)} with the offer${extras.length ? ` (+ ${extras.join(', ')})` : ''}…`);
 console.log('This usually takes one or two minutes.\n');
 
-const analysis = await askClaude({ system, content: parts.join('\n\n') });
+const analysis = await askClaude({ system, content });
 
 // File name from the "# Role · Company" heading.
 const heading = analysis.match(/^#\s+(.+)$/m)?.[1] ?? 'job-offer';
@@ -78,14 +92,6 @@ if (questions) {
 if (company) console.log(`\n  To tailor your resume: npm run new -- ${slug(company)}`);
 
 // --- helpers ---
-
-function readCoverLetters(dir) {
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
-    .filter((f) => /\.(md|txt)$/i.test(f) && !f.startsWith('.'))
-    .sort()
-    .map((f) => ({ name: f, text: readFileSync(path.join(dir, f), 'utf8') }));
-}
 
 async function readPastedOffer() {
   if (process.stdin.isTTY) {

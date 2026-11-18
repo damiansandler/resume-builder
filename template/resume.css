@@ -1,0 +1,171 @@
+/*
+ * Resume template based on the original Google Docs layout (A4 page, 0.4in margins,
+ * Calibri 10pt, single line spacing), with roomier vertical spacing between sections
+ * and entries (see --section-gap, --heading-gap, --entry-gap).
+ */
+
+:root {
+  --font: 'Carlito', 'Calibri', Arial, sans-serif; /* Carlito = metric-compatible Calibri; Arial supplies symbols Carlito lacks (e.g. →) */
+  --font-size: 10pt;
+  --line-height: 1.2207;          /* Calibri "single" spacing: (1950 + 550) / 2048 */
+  --page-margin: 28.8pt;          /* 0.4in = 576 twips */
+  --page-margin-top: 30pt;        /* 0.4in + 1.2pt: Docs puts Calibri's baseline lower in the line than Chrome */
+  --page-margin-right: 24pt;      /* see body padding: room for the heading rules */
+  --page-margin-bottom: 48pt;     /* body stops above the footer (footer at 0.5in) */
+  /* Vertical rhythm between blocks (tune these to make the resume airier or tighter).
+     Values follow common US MBA resume templates: about a blank line before each
+     section, a little air under the heading rule, half a line between entries. */
+  --section-gap: 11pt;            /* space above each section heading */
+  --heading-gap: 4pt;             /* space between the heading rule and the section content */
+  --entry-gap: 6pt;               /* space between jobs / degrees */
+  --block-gap: 3pt;               /* inside an entry: between role, intro and bullet list */
+  --bullet-indent: 13.5pt;        /* distance from the bullet to its text, same in every section */
+  --date-col: 72pt;               /* tab stop at 1440 twips */
+  --rule-width: 1pt;
+  --link-color: #1155cc;
+}
+
+@page {
+  size: 596pt 842pt;             /* A4 as exported by Google Docs */
+  margin: var(--page-margin-top) var(--page-margin-right) var(--page-margin-bottom) var(--page-margin);
+
+  @bottom-right {
+    font-family: 'Carlito', 'Calibri', Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.2207;
+    vertical-align: top;
+    padding-top: 0.6pt;
+    padding-right: 5.4pt;
+    color: #000;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  margin: 0;
+  /* Chrome snaps page margins to whole CSS pixels (28.8pt → 28.5pt); the left padding
+     restores the exact 0.4in. The right page margin is smaller than the real 0.4in so the
+     heading rules can extend into it (Chrome clips anything painted outside the page
+     area); the right padding brings the text column back to where Google Docs ends it
+     (~1pt short of the 0.4in margin). */
+  padding: 0 6pt 0 0.3pt;
+  font-family: var(--font);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  color: #000;
+  font-kerning: normal;
+  text-rendering: geometricPrecision;
+}
+
+h1, h2, h3, p, ul { margin: 0; padding: 0; font-size: inherit; }
+
+a { color: var(--link-color); text-decoration: underline; }
+
+/* ---------- Header ---------- */
+
+.resume-header { text-align: center; }
+.resume-header h1 { font-weight: 700; }
+
+/* ---------- Sections ---------- */
+
+.section h2 {
+  display: flow-root;             /* keep the rule's margins inside the heading */
+  break-inside: avoid;            /* never split the title from its rule */
+  margin-top: var(--section-gap);
+  font-weight: 700;
+  break-after: avoid;
+}
+
+/* Full-width 1pt rule drawn just under the heading baseline. Like the original
+   line shape (6883400 EMU wide) it runs ~4pt into the right margin.
+   It is a normal-flow block pulled up with a negative margin (not position:absolute):
+   Chrome paints positioned elements last, which would scramble the PDF text order. */
+.section h2::after {
+  content: '';
+  display: block;
+  height: 0;
+  border-top: var(--rule-width) solid #000;
+  margin: calc(10.1pt - 1em * var(--line-height)) -4.6pt calc(1em * var(--line-height) - 10.1pt - var(--rule-width)) 1pt;
+}
+
+.section-body > :first-child { margin-top: var(--heading-gap); }
+
+/* ---------- Dated entries ---------- */
+
+.entry-head {
+  display: grid;
+  grid-template-columns: var(--date-col) auto 1fr;   /* location flush with the right margin */
+  break-after: avoid;
+}
+.entry-org { font-weight: 700; }
+.entry-location { justify-self: end; white-space: nowrap; }
+
+.entry-body { margin-left: var(--date-col); }
+.entry-body > * + * { margin-top: var(--block-gap); }
+
+/* Page breaks: an entry may continue on the next page, but only between bullets.
+   Its heading, role and intro always stay with at least its first two bullets, and a
+   bullet is never split across pages. */
+.entry-body > p { break-after: avoid; }
+.entry-body > ul > li:first-child { break-after: avoid; }
+li { break-inside: avoid; }
+
+.entry + .entry { margin-top: var(--entry-gap); }
+
+/* ---------- Bullets ---------- */
+
+ul { list-style: none; }
+
+/* Hanging bullet as an inline-block in normal flow (keeps PDF text in reading order). */
+li {
+  padding-left: var(--bullet-indent);
+  text-indent: calc(-1 * var(--bullet-indent));
+  orphans: 2;
+  widows: 2;
+}
+li::before {
+  content: '●';
+  display: inline-block;
+  width: var(--bullet-indent);
+  text-indent: 0;
+  line-height: 0;                 /* Arial's taller metrics must not grow the line */
+  font-family: Arial, 'Arial Unicode MS', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.section-additional-data .section-body > ul { margin-left: var(--date-col); }
+
+/* ---------- Manual page breaks ---------- */
+
+/* `## TITLE {.page-break}` or `### … {.page-break}` in the Markdown starts that
+   section or entry on a new page. */
+.page-break { break-before: page; }
+.page-break > h2,
+.entry.page-break { margin-top: 0; }
+
+/* ---------- Screen-only (HTML view) ---------- */
+
+.page-footer { display: none; }
+
+@media screen {
+  html { background: #e5e5e5; }
+  body {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 24px auto;
+    padding: var(--page-margin) var(--page-margin) var(--page-margin-bottom);
+    background: #fff;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+    position: relative;
+  }
+  .page-footer {
+    display: block;
+    position: absolute;
+    right: calc(var(--page-margin) + 1pt);
+    bottom: calc(var(--page-margin-bottom) - 12.8pt);
+  }
+}

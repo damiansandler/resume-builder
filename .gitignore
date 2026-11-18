@@ -1,0 +1,17 @@
+# Dependencies and build files
+node_modules/
+build/
+
+# Your personal files: they stay on your computer and are never uploaded
+resumes/
+cover-letters/
+notes/
+matches/
+output/
+reference/
+*.docx
+.env
+
+# Editor and system files
+.obsidian/
+.DS_Store

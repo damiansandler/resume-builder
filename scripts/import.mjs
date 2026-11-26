@@ -1,62 +1,59 @@
 #!/usr/bin/env node
-// Creates a resume from the material you already have: the resumes and LinkedIn profile PDF in
-// sources/, plus your cover letters in cover-letters/ as reference. Follows the instructions in
-// sources/README.md (the same ones Claude follows in the chat).
+// Creates your base resume (profile/resume-base.md) from the material you already have: your LinkedIn
+// profile PDF and older resumes in profile/ and profile/old-resumes/, plus your cover letters in
+// profile/cover-letters/ as reference. Follows the instructions in profile/README.md (the same ones
+// Claude follows in the chat).
 //
-// Usage:
-//   npm run import                → resumes/<today>-imported.md
-//   npm run import -- my-resume   → resumes/<today>-my-resume.md
+// Usage: npm run import
 //
-// Writes the resume, adds the details that did not fit to notes/experience.md and builds the PDF.
-// Your files in sources/ and cover-letters/ are only read, never changed.
+// Writes the resume, adds the details that did not fit to profile/experience.md and builds the PDF.
+// Your files are only read, never changed.
 // Needs ANTHROPIC_API_KEY in .env (see README).
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { askClaude, requireApiKey, slug, today } from '../src/claude.js';
-import { listMaterial, materialBlocks } from '../src/files.js';
+import { askClaude, requireApiKey } from '../src/claude.js';
+import { SUPPORTED, listMaterial, materialBlocks } from '../src/files.js';
+import { BASE_RESUME, COVER_LETTERS_DIR, EXPERIENCE, IMPORT_REPORT, PROFILE_DIR, fail, rel, sourceFiles, today } from '../src/paths.js';
 import { ROOT } from '../src/render.js';
-import { RESUMES_DIR } from '../src/versions.js';
 
-const NOTES = path.join(ROOT, 'notes', 'experience.md');
-const rel = (p) => path.relative(process.cwd(), p);
+const NOTES = EXPERIENCE;
 const read = (...p) => readFileSync(path.join(ROOT, ...p), 'utf8');
 
-const sources = listMaterial(path.join(ROOT, 'sources'));
-const letters = listMaterial(path.join(ROOT, 'cover-letters'));
+const all = sourceFiles();
+const sources = { files: all.filter((f) => SUPPORTED.test(f)), skipped: all.filter((f) => !SUPPORTED.test(f)) };
+const letters = listMaterial(COVER_LETTERS_DIR);
+if (existsSync(BASE_RESUME)) {
+  fail(`You already have a base resume: ${rel(BASE_RESUME)}.
+  To create it again from your files, move it to profile/old-resumes/ first (it will be read as an older resume).`);
+}
 if (!sources.files.length) {
-  console.error(`✗ No files in sources/.
+  fail(`No files to import in profile/.
 
-  Put your current resume (PDF or Word) and your LinkedIn profile PDF there
-  (on LinkedIn: your profile → More → Save to PDF), then run npm run import again.`);
-  process.exit(1);
+  Put your LinkedIn profile PDF (on LinkedIn: your profile → More → Save to PDF) and your current
+  resume in profile/, and older resumes in profile/old-resumes/. Then run npm run import again.`);
 }
-requireApiKey('Create my resume from my sources');
+requireApiKey('Create my base resume from my profile files');
 
-const label = slug(process.argv[2] ?? 'imported') || 'imported';
 const date = today();
-const target = path.join(RESUMES_DIR, `${date}-${label}.md`);
-if (existsSync(target)) {
-  console.error(`✗ ${rel(target)} already exists. Pick another name: npm run import -- another-name`);
-  process.exit(1);
-}
+const target = BASE_RESUME;
 
 const names = (list) => list.map((f) => path.basename(f)).join(', ');
-console.log(`Reading sources/: ${names(sources.files)}`);
-if (letters.files.length) console.log(`Reading cover-letters/: ${names(letters.files)}`);
+console.log(`Reading profile/: ${sources.files.map((f) => path.relative(PROFILE_DIR, f)).join(', ')}`);
+if (letters.files.length) console.log(`Reading profile/cover-letters/: ${names(letters.files)}`);
 const skipped = [...sources.skipped, ...letters.skipped];
 if (skipped.length) console.log(`(Skipped, unsupported format: ${names(skipped)}. Use PDF, Word, Markdown or text.)`);
 
 const notes = existsSync(NOTES) ? readFileSync(NOTES, 'utf8').trim() : '';
 const content = [
-  ...(await materialBlocks(sources.files, 'sources')),
-  ...(await materialBlocks(letters.files, 'cover-letters')),
+  ...(await materialBlocks(sources.files, 'profile', PROFILE_DIR)),
+  ...(await materialBlocks(letters.files, 'profile/cover-letters')),
   {
     type: 'text',
     text: [
-      `Today's date: ${date}. Resume label: ${label}.`,
-      notes ? `<experience_notes>\n${notes}\n</experience_notes>` : 'notes/experience.md does not exist yet.',
+      `Today's date: ${date}.`,
+      notes ? `<experience_notes>\n${notes}\n</experience_notes>` : 'profile/experience.md does not exist yet.',
       'Create the resume from the files above following the instructions. Reply in the "Reply format for npm run import".',
     ].join('\n\n'),
   },
@@ -66,7 +63,7 @@ const system = `You turn a person's existing resumes, LinkedIn profile export an
 project's Markdown format. Follow the instructions exactly.
 
 <instructions>
-${read('sources', 'README.md')}
+${read('profile', 'README.md')}
 </instructions>
 
 <resume_format>
@@ -87,7 +84,7 @@ if (!resume.includes('\n## ')) {
   process.exit(1);
 }
 if (!resume.startsWith('---')) resume = `---\nfooter:\n---\n\n${resume}`;
-await mkdir(RESUMES_DIR, { recursive: true });
+await mkdir(PROFILE_DIR, { recursive: true });
 await writeFile(target, resume + '\n');
 const written = [`✔ Resume: ${rel(target)}`];
 
@@ -103,7 +100,7 @@ if (newNotes) {
 }
 
 const questions = block('questions');
-const report = path.join(ROOT, 'notes', `${date}-${label}-import-report.md`);
+const report = IMPORT_REPORT;
 await writeFile(
   report,
   `# Import report · ${date}\n\n**Resume:** ${path.basename(target)}\n\n## Summary\n\n${block('summary')}\n\n## Questions\n\n${questions || 'None.'}\n`,
@@ -114,7 +111,7 @@ console.log(block('summary'));
 console.log(`\n${written.join('\n')}\n`);
 
 console.log('Building the PDF…');
-spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'generate', '--', path.basename(target)], {
+spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'generate'], {
   cwd: ROOT,
   stdio: 'inherit',
   shell: process.platform === 'win32',
@@ -123,6 +120,6 @@ spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'generate', 
 if (questions) {
   console.log('\nQuestions to make your resume stronger:\n');
   console.log(questions.replace(/^/gm, '  '));
-  console.log('\n  Answer them in the Claude Code chat ("Answer the import questions"), or write the answers in notes/experience.md.');
+  console.log('\n  Answer them in the Claude Code chat ("Answer the import questions"), or write the answers in profile/experience.md.');
 }
-console.log(`\nNext: check the resume with npm run preview -- ${label}`);
+console.log('\nNext: check the resume with npm run preview');

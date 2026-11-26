@@ -2,7 +2,7 @@
 footer:
 ---
 
-<!-- Sample resume with made-up data. Copy it into resumes/ with `npm run new -- my-resume` and replace everything. -->
+<!-- Sample resume with made-up data. Copy it to profile/resume-base.md and replace everything. -->
 
 # ALEX MORGAN
 

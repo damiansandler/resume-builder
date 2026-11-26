@@ -5,11 +5,14 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "import": "node scripts/import.mjs",
+    "job": "node scripts/job.mjs",
     "new": "node scripts/new.mjs",
     "preview": "node scripts/preview.mjs",
     "generate": "node scripts/generate.mjs",
     "check": "node scripts/check-ats.mjs",
     "match": "node scripts/match.mjs",
+    "write-cover-letter": "node scripts/write-cover-letter.mjs",
+    "cover-letter": "node scripts/cover-letter.mjs",
     "compare": "node scripts/compare.mjs",
     "postinstall": "playwright install chromium"
   },

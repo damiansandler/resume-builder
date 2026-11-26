@@ -1,4 +1,4 @@
-// Reads the user's material (sources/, cover-letters/) as content blocks for Claude.
+// Reads the user's material (profile/ files, cover letters) as content blocks for Claude.
 // PDFs are sent as documents (Claude reads their layout), Word files are converted to text,
 // Markdown and text files are sent as they are.
 import { execFileSync } from 'node:child_process';
@@ -6,7 +6,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import mammoth from 'mammoth';
 
-const SUPPORTED = /\.(pdf|docx|doc|md|txt)$/i;
+export const SUPPORTED = /\.(pdf|docx|doc|md|txt)$/i;
 
 /**
  * Lists the files of a folder that can be read, skipping README.md and hidden files.
@@ -22,13 +22,14 @@ export function listMaterial(dir) {
 }
 
 /**
- * Turns files into Claude content blocks, each labeled with its folder and name.
+ * Turns files into Claude content blocks, each labeled with its folder and name
+ * (its path relative to `root` when given).
  * Files that cannot be read are skipped with a warning.
  */
-export async function materialBlocks(files, label) {
+export async function materialBlocks(files, label, root) {
   const blocks = [];
   for (const file of files) {
-    const name = `${label}/${path.basename(file)}`;
+    const name = `${label}/${root ? path.relative(root, file) : path.basename(file)}`;
     try {
       if (/\.pdf$/i.test(file)) {
         blocks.push({ type: 'text', text: `File: ${name}` });

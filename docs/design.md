@@ -27,11 +27,20 @@ The template replicates a classic Google Docs resume, measured from the original
 * **Links:** colored `#1155cc` and underlined.
 * **Page breaks:** come from the natural flow. Use `{.page-break}` to force one (see `markdown.md`).
 
+## The cover letter
+
+`template/cover-letter.css` styles cover letters as a plain letter, like one written in Google Docs:
+US Letter page, 1in margins, Arial 11pt (Arimo or Liberation Sans where Arial is missing), 12pt before
+each paragraph. Change `--font`, `--font-size`, `--paragraph-gap` or `--page-margin` at the top of the
+file, or the `@page` size for A4. `npm run cover-letter` builds the PDF and checks that every line is
+readable as text and that the letter fits on one page.
+
 ## Matching an existing resume: `npm run compare` (optional)
 
 If you are recreating a resume you already have as a PDF, put it in `reference/original.pdf` and run
 `npm run compare`. It compares your generated PDF with it line by line (text, line breaks, positions)
-and pixel by pixel, and writes diff images to `output/compare/`. Without a reference PDF the command
+and pixel by pixel, and writes diff images to `build/compare/`. It uses your base resume, or the
+application you name (`npm run compare -- cartify`). Without a reference PDF the command
 just says there is nothing to compare.
 
 ## ATS-friendliness
@@ -45,17 +54,23 @@ Applicant tracking systems (ATS) read the text of your PDF. The template keeps i
 * Hyperlinks are real link annotations.
 * The PDF title comes from the name.
 
-`npm run check` verifies all of this on the generated PDF: every line of the Markdown is extractable
-and in order, links work, fonts are embedded, the PDF is tagged and has a title.
+`npm run generate` verifies all of this on every PDF it builds (`npm run check` runs only the checks):
+every line of the Markdown is extractable and in order, links work, fonts are embedded, the PDF is
+tagged and has a title.
 
 ## How it works
 
 ```
-resumes/<name>.md ──parse──▶ src/parse.js ──render──▶ src/render.js ──print──▶ src/pdf.js ──▶ output/<name>.pdf
-                                                         (template/)              (Playwright + Chromium)
+resume.md ──parse──▶ src/parse.js ──render──▶ src/render.js ──print──▶ src/pdf.js ──▶ PDF next to it ──▶ src/ats.js
+                                               (template/)              (Playwright + Chromium)        (ATS checks)
 ```
 
 * `src/parse.js` turns the Markdown into a resume model (header, sections, entries, blocks).
 * `src/render.js` turns the model into semantic HTML and fills `template/resume.html`.
 * `src/pdf.js` prints the HTML to PDF with Playwright's Chromium.
-* `src/versions.js` finds resume versions (the newest file in `resumes/`, or the sample when it is empty).
+* `src/ats.js` checks the PDF the way an ATS reads it.
+* `src/paths.js` knows where everything lives (`profile/`, `applications/`) and finds an application
+  from part of its folder name.
+* `src/jobs.js` reads and writes `job.md` and finds a posting that was already saved.
+* `src/keywords.js` finds keywords missing from the base resume across several analyses.
+* `src/letter.js` turns a `cover-letter.md` into HTML with `template/cover-letter.html`.

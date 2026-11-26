@@ -71,18 +71,6 @@ export async function askClaude({ system, content }) {
   return text;
 }
 
-/** Today's date as YYYY-MM-DD in local time. */
-export const today = () => new Date().toLocaleDateString('en-CA');
-
-/** Lowercase, hyphenated, accent-free slug. */
-export const slug = (s) =>
-  (s ?? '')
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
-
 /** Minimal .env loader: KEY=value lines; does not override variables already set. */
 function loadEnv(file) {
   if (!existsSync(file)) return;

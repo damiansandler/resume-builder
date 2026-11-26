@@ -1,104 +1,132 @@
 #!/usr/bin/env node
-// Compares a resume with a job offer using Claude and saves the analysis to matches/.
-// The scoring rules live in match/criteria.md (the same file Claude follows in the chat).
+// Compares your resume with a saved job posting using Claude, following match/criteria.md (the same
+// file Claude follows in the chat).
 //
 // Usage:
-//   npm run match                          → paste the offer, then press Ctrl+D
-//   npm run match -- offer.txt             → read the offer from a file
-//   npm run match -- offer.txt 2020-04-23  → compare with another resume version
-// Also reads sources/ (LinkedIn profile, older resumes), cover-letters/ and notes/experience.md
-// when they exist.
+//   npm run match -- cartify   → the application whose folder name contains "cartify"
+//   npm run match            → the newest application
+//
+// First run: scores your BASE resume (profile/resume-base.md) against applications/<…>/job.md and
+// writes applications/<…>/match.md.
+// Once the application has its own resume.md: scores that tailored version and adds a
+// "Tailored version" section to match.md (base score → tailored score).
+// Also reads profile/ (LinkedIn, old resumes, cover letters, experience.md).
 //
 // Needs ANTHROPIC_API_KEY, set in a .env file at the project root (see README).
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { askClaude, requireApiKey, slug, today as todayDate } from '../src/claude.js';
-import { listMaterial, materialBlocks } from '../src/files.js';
+import { askClaude, requireApiKey } from '../src/claude.js';
+import { SUPPORTED, listMaterial, materialBlocks } from '../src/files.js';
+import { readJob } from '../src/jobs.js';
+import { missingAcrossOffers } from '../src/keywords.js';
+import { BASE_RESUME, COVER_LETTERS_DIR, EXPERIENCE, PROFILE_DIR, fail, latestApplication, rel, resolveApplication, slug, sourceFiles, today as todayDate } from '../src/paths.js';
 import { ROOT } from '../src/render.js';
-import { resolveResume } from '../src/versions.js';
 
-const rel = (p) => path.relative(process.cwd(), p);
-requireApiKey('Compare my latest resume with this job: <paste the offer>');
+const arg = process.argv[2];
+const dir = arg ? resolveApplication(arg) : latestApplication();
+const short = arg ?? path.basename(dir);
+const job = readJob(dir);
+if (!job?.offer) fail(`${rel(dir)} has no job posting (job.md). Save one with npm run job, or paste the posting in that file.`);
+if (job.offer.length < 200) fail(`The posting in ${rel(dir)}/job.md looks too short. Paste the full text there.`);
+if (!existsSync(BASE_RESUME)) fail('There is no base resume yet (profile/resume-base.md). Create it with npm run import.');
+requireApiKey(`Compare my base resume with the job in ${rel(dir)}`);
 
-const [offerArg, resumeArg] = process.argv.slice(2);
-const resumePath = resolveResume(resumeArg);
-const offer = offerArg ? readFileSync(path.resolve(offerArg), 'utf8') : await readPastedOffer();
-if (offer.trim().length < 200) {
-  console.error('✗ The offer looks too short. Paste the full job description (or pass a text file).');
-  process.exit(1);
-}
-
-const criteria = readFileSync(path.join(ROOT, 'match', 'criteria.md'), 'utf8');
-const resume = readFileSync(resumePath, 'utf8');
-const coverLetters = listMaterial(path.join(ROOT, 'cover-letters')).files;
-const sources = listMaterial(path.join(ROOT, 'sources')).files;
-const notesPath = path.join(ROOT, 'notes', 'experience.md');
-const notes = existsSync(notesPath) ? readFileSync(notesPath, 'utf8').trim() : '';
+const matchPath = path.join(dir, 'match.md');
+const tailoredPath = path.join(dir, 'resume.md');
+const hasAnalysis = existsSync(matchPath);
+const tailoring = hasAnalysis && existsSync(tailoredPath);
 const today = todayDate();
 
-const system = `You compare a candidate's resume with a job offer and write an analysis in Markdown.
-Follow the scoring criteria below exactly, including the output format. Reply with the analysis only,
-starting with the "# <Role> · <Company>" heading.
+const criteria = readFileSync(path.join(ROOT, 'match', 'criteria.md'), 'utf8');
+const base = readFileSync(BASE_RESUME, 'utf8');
+const sources = sourceFiles().filter((f) => SUPPORTED.test(f));
+const letters = listMaterial(COVER_LETTERS_DIR).files;
+const notes = existsSync(EXPERIENCE) ? readFileSync(EXPERIENCE, 'utf8').trim() : '';
+const posting = [job.meta.role && `Role: ${job.meta.role}`, job.meta.company && `Company: ${job.meta.company}`, job.meta.link && `Link: ${job.meta.link}`, '', job.offer]
+  .filter((l) => l !== undefined && l !== false && l !== null)
+  .join('\n');
 
-${criteria}`;
-
-const content = [
-  { type: 'text', text: `Today's date: ${today}\n\n<resume file="${path.basename(resumePath)}">\n${resume}\n</resume>` },
-  ...(await materialBlocks(sources, 'sources')),
-  ...(await materialBlocks(coverLetters, 'cover-letters')),
-  {
-    type: 'text',
-    text: [
-      sources.length ? '' : 'No source material (sources/) provided.',
-      coverLetters.length ? '' : 'No cover letters provided.',
-      notes ? `<experience_notes>\n${notes}\n</experience_notes>` : 'No experience notes provided.',
-      `<job_offer>\n${offer.trim()}\n</job_offer>`,
-    ]
-      .filter(Boolean)
-      .join('\n\n'),
-  },
+const material = [
+  ...(await materialBlocks(sources, 'profile', PROFILE_DIR)),
+  ...(await materialBlocks(letters, 'profile/cover-letters')),
+];
+const context = [
+  sources.length ? '' : 'No source material (LinkedIn, old resumes) in profile/.',
+  letters.length ? '' : 'No cover letters provided.',
+  notes ? `<experience_notes file="profile/experience.md">\n${notes}\n</experience_notes>` : 'No experience notes provided.',
+  `<job_offer>\n${posting.trim()}\n</job_offer>`,
 ];
 
-const extras = [
-  sources.length && `${sources.length} source files`,
-  coverLetters.length && `${coverLetters.length} cover letters`,
-  notes && 'experience notes',
-].filter(Boolean);
-console.log(`Comparing ${rel(resumePath)} with the offer${extras.length ? ` (+ ${extras.join(', ')})` : ''}…`);
+let system;
+let content;
+if (tailoring) {
+  system = `You score a tailored resume against a job offer, following the scoring criteria below exactly.
+Reply only with the "Tailored version" section described in "Scoring a tailored version", starting with its heading.
+
+${criteria}`;
+  content = [
+    { type: 'text', text: `Today's date: ${today}\n\n<base_resume file="profile/resume-base.md">\n${base}\n</base_resume>\n\n<tailored_resume file="${rel(tailoredPath)}">\n${readFileSync(tailoredPath, 'utf8')}\n</tailored_resume>\n\n<base_analysis file="${rel(matchPath)}">\n${readFileSync(matchPath, 'utf8')}\n</base_analysis>` },
+    ...material,
+    { type: 'text', text: context.filter(Boolean).join('\n\n') },
+  ];
+} else {
+  system = `You compare a candidate's resume with a job offer and write an analysis in Markdown.
+Follow the scoring criteria below exactly, including the output format. Reply with the analysis only,
+starting with the "# <Role> · <Company>" heading. Leave out the "Missing in several offers" section: the
+script adds it.
+
+${criteria}`;
+  content = [
+    { type: 'text', text: `Today's date: ${today}\n\n<resume file="profile/resume-base.md">\n${base}\n</resume>` },
+    ...material,
+    { type: 'text', text: context.filter(Boolean).join('\n\n') },
+  ];
+}
+
+const extras = [sources.length && `${sources.length} source files`, letters.length && `${letters.length} cover letters`, notes && 'experience notes'].filter(Boolean);
+const what = tailoring ? `your tailored resume (${rel(tailoredPath)})` : 'your base resume';
+console.log(`Comparing ${what} with ${rel(dir)}/job.md${extras.length ? ` (+ ${extras.join(', ')})` : ''}…`);
 console.log('This usually takes one or two minutes.\n');
 
-const analysis = await askClaude({ system, content });
+const reply = await askClaude({ system, content });
 
-// File name from the "# Role · Company" heading.
-const heading = analysis.match(/^#\s+(.+)$/m)?.[1] ?? 'job-offer';
-const [role, company] = heading.split('·').map((s) => s.trim());
-const name = [today, slug(company), slug(role)].filter(Boolean).join('-').slice(0, 90);
-const outDir = path.join(ROOT, 'matches');
-await mkdir(outDir, { recursive: true });
-let outPath = path.join(outDir, `${name}.md`);
-for (let i = 2; existsSync(outPath); i++) outPath = path.join(outDir, `${name}-${i}.md`);
-await writeFile(outPath, analysis + '\n');
+if (tailoring) {
+  // Replace any earlier "Tailored version" section, keep the base analysis above it.
+  const previous = readFileSync(matchPath, 'utf8').split(/^## Tailored version\b.*$/m)[0].trimEnd();
+  await writeFile(matchPath, `${previous}\n\n${reply.trim()}\n`);
+  const line = reply.match(/^\*\*Total:.*$/m)?.[0].replace(/\*\*/g, '');
+  console.log(`✔ ${line ?? 'Tailored version scored'}`);
+  console.log(`  Added to ${rel(matchPath)}`);
+  const unsupported = reply.split(/^\*\*Not supported by your files:\*\*/m)[1]?.split(/^\*\*|^##/m)[0].trim();
+  if (unsupported && !/^none\.?$/i.test(unsupported)) {
+    console.log(`\n⚠ Lines in the tailored resume that your files do not support:\n${unsupported.replace(/^/gm, '  ')}`);
+  }
+  process.exit(0);
+}
 
-const total = analysis.match(/^##\s+Total:.*$/m)?.[0].replace(/^##\s+/, '');
+// Base analysis. Keywords that are also missing in other recent offers point at what the base lacks.
+const repeated = missingAcrossOffers({ analysis: reply, exclude: dir, base });
+const section = repeated.length
+  ? `\n\n## Missing in several offers\n\nKeywords missing from your base resume in this posting and in other recent ones. If you have the\nexperience, add them to the base, not only to one tailored version.\n\n${repeated.map((k) => `- **${k.keyword}**: ${k.count} offers (${k.where.join(', ')})`).join('\n')}`
+  : '';
+if (hasAnalysis) {
+  const old = path.join(dir, `match-${today}-old.md`);
+  await rename(matchPath, old);
+  console.log(`ℹ The previous analysis was kept as ${rel(old)}`);
+}
+await writeFile(matchPath, `${reply.trim()}${section}\n`);
+
+const total = reply.match(/^##\s+Total:.*$/m)?.[0].replace(/^##\s+/, '');
 console.log(`✔ ${total ?? 'Analysis ready'}`);
-console.log(`  Saved to ${rel(outPath)}`);
-const questions = analysis.split(/^##\s+Questions for you\s*$/m)[1]?.split(/^##\s/m)[0].trim();
+console.log(`  Saved to ${rel(matchPath)}`);
+const questions = reply.split(/^##\s+Questions for you\s*$/m)[1]?.split(/^##\s/m)[0].trim();
 if (questions) {
   console.log('\nQuestions for you (answering them can raise the score):\n');
   console.log(questions.replace(/^/gm, '  '));
-  console.log('\n  Answer them in the Claude Code chat, or write the answers in notes/experience.md and run npm run match again.');
+  console.log('\n  Answer them in the Claude Code chat, or write the answers in profile/experience.md and run npm run match again.');
 }
-if (company) console.log(`\n  To tailor your resume: npm run new -- ${slug(company)}`);
-
-// --- helpers ---
-
-async function readPastedOffer() {
-  if (process.stdin.isTTY) {
-    console.log('Paste the job offer below, then press Enter and Ctrl+D:\n');
-  }
-  const chunks = [];
-  for await (const chunk of process.stdin) chunks.push(chunk);
-  console.log('');
-  return Buffer.concat(chunks).toString('utf8');
+if (repeated.length) {
+  console.log(`\nAlso missing in other offers: ${repeated.map((k) => `${k.keyword} (${k.count})`).join(' · ')}`);
 }
+console.log(`\n  To tailor your resume: npm run new -- ${slug(short) || short}`);

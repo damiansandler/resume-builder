@@ -1,8 +1,14 @@
-<!-- Sample cover letter with made-up data. Put your real cover letters in cover-letters/ (one file each: PDF, Word, Markdown or text). Claude reads them only as a reference for your voice and your stories. -->
+---
+company: Cartify
+role: Senior Product Manager, Payments
+lang: en
+---
 
-# Cover letter — Product Manager, Cartify (2024)
+<!-- Sample cover letter with made-up data, in the format of applications/<folder>/cover-letter.md.
+     Put your real past cover letters in profile/cover-letters/ (any format): Claude learns your voice
+     from them. Build this sample's PDF with: npm run cover-letter -- examples/sample-cover-letter.md -->
 
-Dear Hiring Team,
+Dear Cartify Team,
 
 When I read that Cartify wants to make checkout "invisible" for small merchants, I recognized a problem I have spent the last five years on.
 

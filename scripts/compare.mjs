@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Compares the generated PDF against the original, both as text layout and as pixels.
 //
-// Usage: npm run compare [-- <reference.pdf> <generated.pdf>]
-// Writes to output/compare/: page-N-diff.png (pixelmatch) and page-N-overlay.png
+// Usage: npm run compare [-- <application name or path.md> [reference.pdf]]   (default: your base resume)
+// Writes to build/compare/: page-N-diff.png (pixelmatch) and page-N-overlay.png
 // (reference in red, generated in blue, identical pixels in black).
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pixelmatch from 'pixelmatch';
@@ -12,10 +12,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { rasterizePdf } from './pdf-raster.mjs';
 import { ROOT } from '../src/render.js';
-import { resolveResume, pdfFor } from '../src/versions.js';
+import { resolveResume } from '../src/paths.js';
 
-// Usage: npm run compare [-- <name or path.md> [reference.pdf]]
-const genPath = pdfFor(resolveResume(process.argv[2]));
+const genPath = resolveResume(process.argv[2]).pdf;
 const refPath = path.resolve(process.argv[3] ?? path.join(ROOT, 'reference', 'original.pdf'));
 if (!existsSync(refPath)) {
   console.log(`ℹ No reference PDF at ${path.relative(process.cwd(), refPath)}, nothing to compare.`);
@@ -23,7 +22,7 @@ if (!existsSync(refPath)) {
   process.exit(0);
 }
 console.log(`Comparing ${path.relative(process.cwd(), genPath)} with ${path.relative(process.cwd(), refPath)}`);
-const outDir = path.join(ROOT, 'output', 'compare');
+const outDir = path.join(ROOT, 'build', 'compare');
 const SCALE = 2;
 
 /** Groups text items into visual lines: [{ page, y, x0, x1, text }] */

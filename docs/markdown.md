@@ -1,6 +1,7 @@
 # Writing a resume in Markdown
 
-Each resume is a Markdown file in `resumes/`. It uses plain Markdown plus a few conventions.
+Each resume is a Markdown file: your base resume is `profile/resume-base.md`, and each application has
+its own `resume.md` in `applications/<folder>/`. It uses plain Markdown plus a few conventions.
 `examples/sample-resume.md` is a complete example.
 
 ## The whole document
@@ -58,7 +59,7 @@ An email in the contact line is plain text. To make it clickable, write
 
 | Key | Meaning |
 | --- | --- |
-| `footer` | Text printed at the bottom-right of every page, for example a date. Leave it empty for no footer. If it is a date like `April 23, 2026`, `npm run new` updates it to today. |
+| `footer` | Text printed at the bottom-right of every page, for example a date. Leave it empty for no footer. If it is a date like `April 23, 2026`, `npm run new` sets it to today in the copy. |
 | `title` | PDF document title. Defaults to the `#` name. |
 | `author` | PDF author metadata. Defaults to the `#` name. |
 | `lang` | Document language. Defaults to `en`. |
@@ -87,4 +88,4 @@ Any command accepts a full path, for example a file in an Obsidian vault:
 npm run generate -- ~/Vault/resume.md
 ```
 
-For `generate`, a second argument sets the output PDF path.
+The PDF is written next to it. For `generate`, a second argument sets the output PDF path.

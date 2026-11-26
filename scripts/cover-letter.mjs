@@ -54,9 +54,10 @@ if (!outArg) for (const old of removeOlderPdfs(output, resume, 'Cover Letter')) 
 const doc = await getDocument({ data: new Uint8Array(await readFile(output)), verbosity: 0 }).promise;
 let text = '';
 for (let p = 1; p <= doc.numPages; p++) {
-  for (const item of (await (await doc.getPage(p)).getTextContent()).items) text += item.str + ' ';
+  for (const item of (await (await doc.getPage(p)).getTextContent()).items) text += item.str + (item.hasEOL ? '\n' : ' ');
 }
-const flat = text.replace(/-\s+/g, '-').replace(/\s+/g, ' ');
+// Only a hyphen at the end of a line joins the next word ("on-\nramp"); "high- and low-level" stays as it is.
+const flat = text.replace(/(\w)-[ \t]*\n\s*/g, '$1-').replace(/\s+/g, ' ');
 const plain = (md) => inline(md).replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
 const lines = letter.paragraphs.flat().map(plain).filter(Boolean);
 const missing = lines.filter((l) => !flat.includes(l));

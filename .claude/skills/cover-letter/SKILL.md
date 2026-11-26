@@ -102,7 +102,7 @@ Alex Morgan
    comes from. Point out anything you need the user to confirm.
 4. Apply the user's changes. Save new facts to `profile/experience.md`.
 5. When the user approves it, save `cover-letter.md` and run `npm run cover-letter -- <name>` to build
-   `<Name> - Cover Letter.pdf` in the same folder.
+   `<Name> - Cover Letter - YYYYMMDD.pdf` in the same folder (dated the day it is built).
 
 ## Reply format for `npm run write-cover-letter`
 

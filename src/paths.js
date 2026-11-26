@@ -13,8 +13,8 @@
 //       job.md                    link + full text of the posting
 //       match.md                  base resume vs. posting (and the tailored version's score)
 //       resume.md                 the tailored resume
-//       <Name> - Resume.pdf       its PDF, ready to upload
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+//       <Name> - Resume - YYYYMMDD.pdf   its PDF, ready to upload (dated the day it is built)
+import { existsSync, readdirSync, readFileSync, statSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './render.js';
 
@@ -125,17 +125,53 @@ export function personName(mdPath) {
     .trim();
 }
 
-/** Name for a PDF someone will see: "<Name> - Resume.pdf" (or another `kind`), from a resume's `# NAME` line. */
-export function pdfNameFor(mdPath, kind = 'Resume') {
+/** Today's date as YYYYMMDD, the date stamp in PDF names. */
+export const stamp = () => today().replace(/-/g, '');
+
+/**
+ * Name for a PDF someone will see: "<Name> - Resume - YYYYMMDD.pdf" (or another `kind`), from a resume's
+ * `# NAME` line and the date it is built.
+ */
+export function pdfNameFor(mdPath, kind = 'Resume', date = stamp()) {
   const name = personName(mdPath);
-  return name ? `${name} - ${kind}.pdf` : `${kind}.pdf`;
+  return `${name ? `${name} - ` : ''}${kind} - ${date}.pdf`;
+}
+
+/** The PDFs of one kind in a folder ("<Name> - Resume - YYYYMMDD.pdf", or without a date), newest first. */
+export function datedPdfs(dir, mdPath, kind = 'Resume') {
+  if (!existsSync(dir)) return [];
+  const name = personName(mdPath);
+  const escape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`^${name ? `${escape(name)} - ` : ''}${escape(kind)}( - (\\d{8}))?\\.pdf$`);
+  return readdirSync(dir)
+    .map((f) => ({ f, m: f.match(pattern) }))
+    .filter(({ m }) => m)
+    .sort((a, b) => (b.m[2] ?? '').localeCompare(a.m[2] ?? ''))
+    .map(({ f }) => path.join(dir, f));
+}
+
+/** The newest existing PDF of one kind in a folder, or the name it would have today. */
+export function latestPdf(dir, mdPath, kind = 'Resume') {
+  return datedPdfs(dir, mdPath, kind)[0] ?? path.join(dir, pdfNameFor(mdPath, kind));
+}
+
+/** Removes the older PDFs of the same kind next to `keep`, so each folder has one current PDF per kind. */
+export function removeOlderPdfs(keep, mdPath, kind = 'Resume') {
+  const removed = [];
+  for (const file of datedPdfs(path.dirname(keep), mdPath, kind)) {
+    if (file !== keep) {
+      unlinkSync(file);
+      removed.push(path.basename(file));
+    }
+  }
+  return removed;
 }
 
 /**
  * Resolves a CLI argument to the resume to build: { md, pdf, label }.
  *   (nothing) or "base"  → profile/resume-base.md → profile/resume-base.pdf
  *                          (examples/sample-resume.md while there is no base yet)
- *   part of a folder name → applications/<folder>/resume.md → applications/<folder>/<Name> - Resume.pdf
+ *   part of a folder name → applications/<folder>/resume.md → applications/<folder>/<Name> - Resume - YYYYMMDD.pdf
  *   a path to a .md file → that file → a PDF next to it
  */
 export function resolveResume(arg) {
@@ -146,17 +182,16 @@ export function resolveResume(arg) {
   }
   if (existsSync(arg) && statSync(arg).isFile()) {
     const md = path.resolve(arg);
-    const pdf = path.basename(md) === 'resume.md'
-      ? path.join(path.dirname(md), pdfNameFor(md))
-      : md.replace(/\.[^.]+$/, '') + '.pdf';
-    return { md, pdf, label: path.basename(md) };
+    const dated = path.basename(md) === 'resume.md';
+    const pdf = dated ? path.join(path.dirname(md), pdfNameFor(md)) : md.replace(/\.[^.]+$/, '') + '.pdf';
+    return { md, pdf, label: path.basename(md), dated };
   }
   const dir = resolveApplication(arg);
   const md = path.join(dir, 'resume.md');
   if (!existsSync(md)) {
     fail(`${rel(dir)} has no resume yet. Create it from your base with: npm run new -- ${arg}`);
   }
-  return { md, pdf: path.join(dir, pdfNameFor(md)), label: path.basename(dir) };
+  return { md, pdf: path.join(dir, pdfNameFor(md)), label: path.basename(dir), dated: true };
 }
 
 export { rel };

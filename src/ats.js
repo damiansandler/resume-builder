@@ -30,7 +30,7 @@ export async function checkPdf({ md, pdf, verbose = false }) {
     tagged &&= !!(await page.getStructTree());
   }
   // Lines broken after a hyphen ("natural-\nlanguage") are joined back without a space.
-  const flat = text.replace(/-\s*\n\s*/g, '-').replace(/\s+/g, ' ');
+  const flat = text.replace(/(\w)-\s*\n\s*/g, '$1-').replace(/\s+/g, ' ');
 
   // Every piece of resume content must appear, in document order.
   const source = await readFile(md, 'utf8');

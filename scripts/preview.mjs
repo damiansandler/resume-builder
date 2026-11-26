@@ -3,7 +3,7 @@
 // server, opens it in the default browser and regenerates/reloads whenever the .md
 // or anything in template/ changes.
 //
-// Usage: npm run preview [-- <name or path.md>]  (default: newest file in resumes/)   (PORT env var, default 4321; NO_OPEN=1 to not open a browser)
+// Usage: npm run preview [-- <application name>]  (default: your base resume)   (PORT env var, default 4321; NO_OPEN=1 to not open a browser)
 import http from 'node:http';
 import { watch } from 'node:fs';
 import { readFile } from 'node:fs/promises';
@@ -11,11 +11,12 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { generatePdf } from '../src/pdf.js';
-import { resolveResume } from '../src/versions.js';
+import { resolveResume } from '../src/paths.js';
 import { BUILD_DIR, TEMPLATE_DIR } from '../src/render.js';
 
-const input = resolveResume(process.argv[2]);
-const downloadName = path.basename(input, path.extname(input)) + '.pdf';
+const { md: input, pdf: finalPdf } = resolveResume(process.argv[2]);
+const downloadName = path.basename(finalPdf);
+const watching = path.relative(process.cwd(), input);
 const PORT = Number(process.env.PORT ?? 4321);
 const pdfPath = path.join(BUILD_DIR, 'preview.pdf');
 
@@ -85,7 +86,7 @@ const viewer = () => `<!doctype html>
   <a href="#pdf" data-view="pdf">PDF</a>
   <a href="#html" data-view="html">HTML</a>
   <a href="/resume.pdf" download="${downloadName}">Download</a>
-  <span class="status">watching ${path.basename(input)} and template/</span>
+  <span class="status">watching ${watching} and template/</span>
 </nav>
 <iframe id="frame"></iframe>
 <pre id="error"></pre>

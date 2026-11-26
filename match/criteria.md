@@ -6,14 +6,18 @@ how resumes are scored: both ways pick up the change.
 
 ## Inputs
 
-- **Resume:** one Markdown file from `resumes/`.
-- **Job offer:** the full text of the posting.
-- **Cover letters (optional):** past letters from `cover-letters/`, used only to find stories and the
-  candidate's voice.
-- **Sources (optional):** files from `sources/`: the candidate's LinkedIn profile export and older
-  resumes. They often hold experience the current resume leaves out (older roles, tools, projects).
-- **Experience notes (optional):** `notes/experience.md`, the candidate's answers to earlier questions
+- **Resume:** the base resume, `profile/resume-base.md`. A tailored version (`resume.md` in the
+  application folder) is scored separately, see "Scoring a tailored version".
+- **Job offer:** the full text of the posting, from `job.md` in the application folder.
+- **Cover letters (optional):** past letters from `profile/cover-letters/`, used only to find stories
+  and the candidate's voice.
+- **Sources (optional):** the other files in `profile/` and `profile/old-resumes/`: the candidate's
+  LinkedIn profile export and older resumes. They often hold experience the base resume leaves out
+  (older roles, tools, projects).
+- **Experience notes (optional):** `profile/experience.md`, the candidate's answers to earlier questions
   about experience that is not in the resume.
+- **Knowledge base (optional):** `profile/knowledge-base.md`, the candidate's master record of their
+  career. It marks which claims are unconfirmed and which details are private.
 
 Sources, cover letters and experience notes do not add points: only the resume counts for the score, because it
 is what the recruiter reads. Use them to find experience that can be **added to the resume truthfully**
@@ -25,6 +29,10 @@ and to avoid asking the same question twice.
 - Quote the resume line that supports each claim.
 - Never suggest adding achievements, numbers or experience that are not in the resume, the sources,
   the cover letters or the experience notes. Suggestions may reword, reorder, emphasize or cut, never invent.
+- Suggested wording must say exactly what the candidate did: leading vs. building it themselves,
+  prototype vs. production, evaluating vs. integrating, plan vs. launch. Do not suggest claims that the
+  sources mark as unconfirmed, or anything they mark as private (compensation, job-search status,
+  contacts, internal company metrics).
 - When a gap might be covered by experience the resume does not show, **ask** instead of assuming
   (see Step 6).
 - Be direct. A low score with clear reasons is more useful than a polite one.
@@ -194,6 +202,49 @@ Answering these can raise the score with experience that is not in the resume ye
 
 ## Next step
 
-1. Answer the questions above (in the Claude Code chat, or in `notes/experience.md`).
+1. Answer the questions above (in the Claude Code chat, or in `profile/experience.md`).
 2. `npm run new -- <company>` to create the tailored version.
+
+## Missing in several offers
+
+Keywords missing from your base resume in this posting and in other recent ones. If you have the
+experience, add them to the base, not only to one tailored version.
+
+- **<keyword>**: N offers (<application folders>)
+```
+
+### Missing in several offers
+
+For each keyword on this analysis's **Missing** line, look at the **Missing** line of the `match.md` of
+the 10 most recent other applications in `applications/`. List the keywords that were also missing in
+at least one of them and that the base resume still does not contain, most repeated first, with the
+folders where they appeared. If there are none, leave the section out. These point at what the base
+resume lacks for the roles the candidate applies to.
+
+## Scoring a tailored version
+
+Once the candidate has a tailored resume for this posting, score it with the same steps and weights
+(the seniority column of the base analysis), so the two totals can be compared. Then check every line
+of the tailored resume that is not in the base resume: it must be supported by the base resume, the
+experience notes, the sources or the cover letters. Add this section at the end of `match.md`,
+replacing any earlier one:
+
+```markdown
+## Tailored version · YYYY-MM-DD
+
+**Total: base NN → tailored NN** · <verdict>
+
+| Part | Base | Tailored |
+|---|---|---|
+| Product areas | NN | NN |
+| Offer requirements | NN | NN |
+| ATS keywords | NN | NN |
+
+**What improved:** the changes that raised the score, in 2–4 bullets.
+
+**Still missing:** requirements and keywords the tailored version does not cover, and whether real
+experience could cover them.
+
+**Not supported by your files:** lines of the tailored resume with no source, each quoted with what
+is missing. "None." when every line is supported.
 ```

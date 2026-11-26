@@ -1,0 +1,45 @@
+/*
+ * Cover letter: a plain letter like one written in Google Docs (US Letter page, 1in margins,
+ * Arial 11pt, a blank line's worth of space between paragraphs).
+ */
+
+:root {
+  --font: Arial, Arimo, 'Liberation Sans', Helvetica, sans-serif; /* Arimo / Liberation Sans: Arial's metrics */
+  --font-size: 11pt;
+  --line-height: 14.55pt;         /* Google Docs line spacing 1.15 with Arial */
+  --paragraph-gap: 12pt;          /* space before each paragraph, the first one included (as in Google Docs) */
+  --page-margin: 72pt;            /* 1in */
+}
+
+@page {
+  size: 612pt 792pt;              /* US Letter */
+  margin: var(--page-margin);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  color: #000;
+}
+
+p { margin: var(--paragraph-gap) 0 0; }
+
+a { color: #1155cc; text-decoration: underline; }
+
+/* ---------- Screen-only (HTML view) ---------- */
+
+@media screen {
+  html { background: #e5e5e5; }
+  body {
+    width: 8.5in;
+    min-height: 11in;
+    margin: 24px auto;
+    padding: var(--page-margin);
+    background: #fff;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+  }
+}

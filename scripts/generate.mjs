@@ -1,16 +1,24 @@
 #!/usr/bin/env node
-// Usage: npm run generate                      → newest file in resumes/
-//        npm run generate -- <name or path.md> [output.pdf]
-// The PDF is written to output/<same name as the .md>.pdf
+// Builds the PDF of a resume and runs the ATS checks on it.
+//
+// Usage: npm run generate                    → profile/resume-base.md → profile/resume-base.pdf
+//        npm run generate -- cartify           → applications/<…cartify…>/resume.md → "<Name> - Resume.pdf" in that folder
+//        npm run generate -- <path.md> [output.pdf]
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
+import { checkPdf } from '../src/ats.js';
 import { generatePdf } from '../src/pdf.js';
-import { resolveResume, pdfFor } from '../src/versions.js';
+import { rel, resolveResume } from '../src/paths.js';
 
 const [arg, outArg] = process.argv.slice(2);
-const input = resolveResume(arg);
-const output = outArg ? path.resolve(outArg) : pdfFor(input);
-await mkdir(path.dirname(output), { recursive: true });
+const { md, pdf: defaultPdf } = resolveResume(arg);
+const pdf = outArg ? path.resolve(outArg) : defaultPdf;
+await mkdir(path.dirname(pdf), { recursive: true });
 const started = Date.now();
-await generatePdf({ input, output });
-console.log(`✔ ${path.relative(process.cwd(), output)} generated from ${path.relative(process.cwd(), input)} in ${Date.now() - started} ms`);
+await generatePdf({ input: md, output: pdf });
+console.log(`✔ ${rel(pdf)} generated from ${rel(md)} in ${Date.now() - started} ms\n`);
+console.log('ATS checks:');
+if (!(await checkPdf({ md, pdf }))) {
+  console.log('\n✗ Some ATS checks failed (see above). The PDF was still written.');
+  process.exit(1);
+}

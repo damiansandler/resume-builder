@@ -1,36 +1,46 @@
 // Renders the built HTML to PDF with Playwright (Chromium).
 import { chromium } from 'playwright';
 import { pathToFileURL } from 'node:url';
+import { buildLetterHtml } from './letter.js';
 import { buildHtml } from './render.js';
-import { latestResume, pdfFor } from './versions.js';
 
 /**
- * Builds the HTML from Markdown and prints it to PDF.
+ * Prints an HTML file to PDF. Page size and margins come from @page in its CSS.
  * Pass an existing `browser` to reuse it (used by the preview server).
  */
-export async function generatePdf({ input = latestResume(), output = pdfFor(input), browser } = {}) {
-  const { htmlPath, resume } = await buildHtml(input);
+async function printPdf({ htmlPath, output, browser }) {
   const ownBrowser = !browser;
   browser ??= await chromium.launch();
   try {
     const page = await browser.newPage();
     await page.goto(pathToFileURL(htmlPath).href, { waitUntil: 'load' });
     await page.evaluate(() => document.fonts.ready);
-    const missing = await page.evaluate(() =>
-      [...document.fonts].filter((f) => f.family.includes('Carlito') && f.status === 'error').length,
-    );
-    if (missing) throw new Error('Carlito font failed to load');
+    const failed = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'error').map((f) => f.family));
+    if (failed.length) throw new Error(`Font failed to load: ${failed.join(', ')}`);
     await page.emulateMedia({ media: 'print' });
     await page.pdf({
       path: output,
-      preferCSSPageSize: true, // page size and margins come from @page in resume.css
+      preferCSSPageSize: true,
       printBackground: true,
       tagged: true, // tagged (accessible) PDF: logical structure + reading order for ATS
       outline: false,
     });
     await page.close();
-    return { output, htmlPath, resume };
   } finally {
     if (ownBrowser) await browser.close();
   }
+}
+
+/** Builds the resume HTML from Markdown and prints it to PDF. */
+export async function generatePdf({ input, output, browser }) {
+  const { htmlPath, resume } = await buildHtml(input);
+  await printPdf({ htmlPath, output, browser });
+  return { output, htmlPath, resume };
+}
+
+/** Builds the cover letter HTML from Markdown and prints it to PDF. */
+export async function generateLetterPdf({ input, output, title, author, browser }) {
+  const { htmlPath, letter } = await buildLetterHtml(input, { title, author });
+  await printPdf({ htmlPath, output, browser });
+  return { output, htmlPath, letter };
 }

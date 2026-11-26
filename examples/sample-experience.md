@@ -2,7 +2,7 @@
 
 Experience that is not in the resume yet: answers to questions from job-offer analyses, extra details,
 tools and numbers. Claude reads this file before every analysis and only adds to the resume what is
-written here or in the resume itself. Copy this file to `notes/experience.md` (or let Claude create it).
+written here or in the resume itself. Copy this file to `profile/experience.md` (or let Claude create it).
 
 <!-- Sample with made-up data. -->
 

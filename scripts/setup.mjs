@@ -3,7 +3,7 @@
 // builds a PDF and opens it so you can see that everything works.
 // Uses only Node built-ins, so it runs before `npm install`.
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,7 +27,7 @@ if (!run(['install'])) {
 }
 
 console.log('\n2/3 Creating your personal folders…');
-for (const dir of ['resumes', 'sources', 'cover-letters', 'notes', 'matches', 'output']) {
+for (const dir of ['profile', 'profile/cover-letters', 'profile/old-resumes', 'applications']) {
   mkdirSync(path.join(ROOT, dir), { recursive: true });
   console.log(`  ${dir}/`);
 }
@@ -38,28 +38,24 @@ if (!run(['run', 'generate'])) {
   process.exit(1);
 }
 
-// Open the PDF that was just built (the newest one in output/).
-const outDir = path.join(ROOT, 'output');
-const newest = readdirSync(outDir)
-  .filter((f) => f.endsWith('.pdf'))
-  .map((f) => path.join(outDir, f))
-  .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs)[0];
-if (newest) {
+// Open the PDF that was just built: your base resume, or the sample while there is none.
+const built = existsSync(path.join(ROOT, 'profile', 'resume-base.md'))
+  ? path.join(ROOT, 'profile', 'resume-base.pdf')
+  : path.join(ROOT, 'build', 'sample-resume.pdf');
+if (existsSync(built)) {
   const opener = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-  spawnSync(opener, process.platform === 'win32' ? ['""', `"${newest}"`] : [newest], { shell: process.platform === 'win32', stdio: 'ignore' });
+  spawnSync(opener, process.platform === 'win32' ? ['""', `"${built}"`] : [built], { shell: process.platform === 'win32', stdio: 'ignore' });
 }
 
 console.log(`
 ✔ All set.
 
 Next steps:
-  Start from the resume you already have:
-    sources/         ← put your current and older resumes and your LinkedIn profile PDF here
-    cover-letters/   ← put your past cover letters here
-  Then ask Claude Code "Create my resume from my sources", or run npm run import.
-
-  Or start from the sample:
-  npm run new -- my-resume   create your resume (a copy of the sample, in resumes/)
-  npm run preview            edit it and see the PDF update live
-  npm run generate           build the final PDF into output/
+  1. Put your files in profile/:
+       profile/                ← your LinkedIn profile PDF and your current resume
+       profile/old-resumes/    ← your older resumes
+       profile/cover-letters/  ← your past cover letters
+  2. Ask Claude Code "Create my base resume from my profile files", or run npm run import.
+     (No files? Copy examples/sample-resume.md to profile/resume-base.md and edit it.)
+  3. For each job you apply to, paste the posting in the Claude Code chat, or run npm run job.
 `);

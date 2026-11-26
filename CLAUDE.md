@@ -11,8 +11,9 @@ unless the user asks otherwise.
   `old-resumes/` and `cover-letters/`.
 - **`applications/`** has one folder per job posting, named `YYYY-MM-DD-<company>-<role>` (lowercase,
   hyphens): `job.md` (link and full text of the posting), `match.md` (the analysis), `resume.md` (the
-  tailored resume), `<Name> - Resume.pdf`, and, when the user asks for one, `cover-letter.md` and
-  `<Name> - Cover Letter.pdf`.
+  tailored resume), `<Name> - Resume - YYYYMMDD.pdf`, and, when the user asks for one, `cover-letter.md`
+  and `<Name> - Cover Letter - YYYYMMDD.pdf`. PDF names carry the date they were built; building again
+  replaces the folder's older PDF of the same kind.
 
 ## Rules
 
@@ -134,7 +135,7 @@ extra details, tools, numbers. It grows over time and is read before every analy
 | `npm run generate [-- <name>]` | Builds the PDF and runs the ATS checks. |
 | `npm run check [-- <name>]` | ATS checks only, with the extracted text. |
 | `npm run write-cover-letter [-- <name>]` | Drafts `cover-letter.md` with the `cover-letter` skill and builds its PDF (needs `ANTHROPIC_API_KEY`). |
-| `npm run cover-letter [-- <name>]` | Builds `<Name> - Cover Letter.pdf` from `cover-letter.md`. Not part of `generate`. |
+| `npm run cover-letter [-- <name>]` | Builds `<Name> - Cover Letter - YYYYMMDD.pdf` from `cover-letter.md`. Not part of `generate`. |
 | `npm run compare` | Optional: compares the PDF with `reference/original.pdf`. |
 
 `<name>` is part of an application folder name, such as `cartify`. Without it, commands use the base

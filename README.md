@@ -66,9 +66,9 @@ resume-builder/
 │       ├── job.md                 ← link and full text of the posting
 │       ├── match.md               ← how your resume fits it: score, gaps, questions
 │       ├── resume.md              ← your resume for this posting
-│       ├── Alex Morgan - Resume.pdf ← ready to upload
+│       ├── Alex Morgan - Resume - 20261125.pdf ← ready to upload, dated the day it was built
 │       ├── cover-letter.md        ← optional: your cover letter for this posting
-│       └── Alex Morgan - Cover Letter.pdf
+│       └── Alex Morgan - Cover Letter - 20261125.pdf
 ├── examples/                      ← sample resume, posting, cover letter and notes, made-up data
 ├── match/criteria.md              ← how a resume is scored against a posting
 ├── template/                      ← the designs of the resume and the cover letter (HTML + CSS)
@@ -133,6 +133,9 @@ npm run match -- cartify     # 6. optional: score the tailored version
 
 `cartify` is any part of the folder name. From the terminal you tailor `resume.md` yourself: the
 commands copy and check, they don't rewrite your resume.
+
+PDF names carry the date they are built, for example `Alex Morgan - Resume - 20261125.pdf`. Building
+again replaces the folder's older PDF of the same kind.
 
 ### Commands
 
@@ -203,7 +206,7 @@ never builds them.
 Claude reads the posting, the analysis, your resume for it, your notes, your LinkedIn and your past
 cover letters, and shows you a draft with the facts it used and where each one comes from. You edit it
 together; when you approve it, it saves `cover-letter.md` in the application folder and builds
-`<Name> - Cover Letter.pdf`.
+`<Name> - Cover Letter - YYYYMMDD.pdf`.
 
 **From the terminal:** `npm run write-cover-letter -- cartify` writes the draft (needs an API key, see
 below). Edit `cover-letter.md` and run `npm run cover-letter -- cartify` to rebuild the PDF.

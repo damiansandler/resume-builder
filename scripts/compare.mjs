@@ -12,9 +12,10 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { rasterizePdf } from './pdf-raster.mjs';
 import { ROOT } from '../src/render.js';
-import { resolveResume } from '../src/paths.js';
+import { latestPdf, resolveResume } from '../src/paths.js';
 
-const genPath = resolveResume(process.argv[2]).pdf;
+const resolved = resolveResume(process.argv[2]);
+const genPath = resolved.dated ? latestPdf(path.dirname(resolved.pdf), resolved.md) : resolved.pdf;
 const refPath = path.resolve(process.argv[3] ?? path.join(ROOT, 'reference', 'original.pdf'));
 if (!existsSync(refPath)) {
   console.log(`ℹ No reference PDF at ${path.relative(process.cwd(), refPath)}, nothing to compare.`);

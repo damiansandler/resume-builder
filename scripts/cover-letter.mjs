@@ -2,7 +2,8 @@
 // Builds the PDF of an application's cover letter. Separate from npm run generate, because not every
 // application needs one.
 //
-// Usage: npm run cover-letter -- cartify   → applications/<…cartify…>/cover-letter.md → "<Name> - Cover Letter.pdf"
+// Usage: npm run cover-letter -- cartify   → applications/<…cartify…>/cover-letter.md → "<Name> - Cover Letter - YYYYMMDD.pdf"
+//                                           (dated today; it replaces the folder's older cover letter PDF)
 //        npm run cover-letter            → the newest application
 //        npm run cover-letter -- <path.md> [output.pdf]
 // The name comes from the resume in the same folder (or your base resume).
@@ -12,7 +13,7 @@ import path from 'node:path';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { ROOT, inline } from '../src/render.js';
 import { generateLetterPdf } from '../src/pdf.js';
-import { BASE_RESUME, fail, latestApplication, pdfNameFor, personName, rel, resolveApplication } from '../src/paths.js';
+import { BASE_RESUME, fail, latestApplication, pdfNameFor, personName, rel, removeOlderPdfs, resolveApplication } from '../src/paths.js';
 
 const [arg, outArg] = process.argv.slice(2);
 let input;
@@ -47,6 +48,7 @@ const { letter } = await generateLetterPdf({
   author: name || undefined,
 });
 console.log(`✔ ${rel(output)} generated from ${rel(input)} in ${Date.now() - started} ms`);
+if (!outArg) for (const old of removeOlderPdfs(output, resume, 'Cover Letter')) console.log(`  replaces ${old}`);
 
 // Quick checks: every line is readable as text, and the letter fits on one page.
 const doc = await getDocument({ data: new Uint8Array(await readFile(output)), verbosity: 0 }).promise;
